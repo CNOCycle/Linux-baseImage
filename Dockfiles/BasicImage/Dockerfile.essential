@@ -1,6 +1,7 @@
 FROM ubuntu:17.10
 
 # set variables
+ENV USERNAME user
 ENV SED_APT_OLD "http://[A-Za-z.]*.ubuntu.com/ubuntu/\?"
 ENV SED_APT_NEW "mirror://mirrors.ubuntu.com/mirrors.txt"
 ENV APT_PACKAGES ca-certificates gcc g++ git cmake make
@@ -11,5 +12,13 @@ RUN sed -i "s|${SED_APT_OLD}|${SED_APT_NEW}|g" /etc/apt/sources.list `#get fast 
     apt-get install -qq --no-install-recommends ${APT_PACKAGES} && \
     rm -rf /var/lib/apt/lists/*
 
-# set workdir
-WORKDIR /root
+# set workdir to user's home
+WORKDIR /home/${USERNAME}
+
+# creat a non-root user and chown all files to user
+RUN useradd -m -s /sbin/nologin ${USERNAME} && \
+    chown -R ${USERNAME} /home/${USERNAME}
+
+# switch user
+USER ${USERNAME}
+
