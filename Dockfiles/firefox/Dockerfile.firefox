@@ -22,7 +22,7 @@ RUN sed -i "s/${SED_APT_OLD}/${SED_APT_NEW}/g" /etc/apt/sources.list `#get fast 
 WORKDIR /home/${USERNAME}
 
 # creat a non-root user and chown all files to user
-RUN useradd -m -s /sbin/nologin ${USERNAME} && \
+RUN useradd -m -s /usr/sbin/nologin ${USERNAME} && \
     chown -R ${USERNAME} /home/${USERNAME}
 
 # switch user
