@@ -1,0 +1,15 @@
+FROM ubuntu:17.10
+
+# set variables
+ENV SED_APT_OLD "http://[A-Za-z.]*.ubuntu.com/ubuntu/\?"
+ENV SED_APT_NEW "mirror://mirrors.ubuntu.com/mirrors.txt"
+ENV APT_PACKAGES ca-certificates gcc g++ git cmake make
+
+# install packages
+RUN sed -i "s|${SED_APT_OLD}|${SED_APT_NEW}|g" /etc/apt/sources.list `#get fast server` && \
+    apt-get update && \
+    apt-get install -qq --no-install-recommends ${APT_PACKAGES} && \
+    rm -rf /var/lib/apt/lists/*
+
+# set workdir
+WORKDIR /root
