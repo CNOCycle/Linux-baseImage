@@ -1,30 +1,28 @@
 # run firefox in docker
 # ref: http://fabiorehm.com/blog/2014/09/11/running-gui-apps-with-docker/
 # ref: https://github.com/playniuniu/docker-gui-firefox
+# ref: http://somatorio.org/en/post/running-gui-apps-with-docker/
 # >> docker run -ti --rm -e DISPLAY=$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix firefox
 # >> xhost + local:docker && docker run --rm -e DISPLAY=unix$DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix firefox
 # TODO :
-#   1. install .font
+#   1. chinese input
 
-FROM ubuntu:17.10 as build-stage
+FROM alpine:3.6
 # set variables
 ENV USERNAME firefox
-ENV SED_APT_OLD "http://[A-Za-z.]*.ubuntu.com/ubuntu/\?"
-ENV SED_APT_NEW "mirror://mirrors.ubuntu.com/mirrors.txt"
-ENV APT_PACKAGES firefox dbus-x11 libcanberra-gtk*
-#libcanberra-gtk-module libcanberra-gtk3-module
+EnV REPO http://dl-3.alpinelinux.org/alpine/edge/testing/
+ENV APT_PACKAGES firefox-esr dbus-x11 wqy-zenhei mesa-gl
+# libcanberra-gtk*
 
 # install packages
-RUN sed -i "s|${SED_APT_OLD}|${SED_APT_NEW}|g" /etc/apt/sources.list `#get fast server` && \
-    apt-get update && \
-    apt-get install -qq --no-install-recommends ${APT_PACKAGES} && \
-    rm -rf /var/lib/apt/lists/*
+RUN apk add --no-cache --repository ${REPO} ${APT_PACKAGES}
+
 
 # set workdir to user's home
 WORKDIR /home/${USERNAME}
 
 # creat a non-root user and chown all files to user
-RUN useradd -m -s /usr/sbin/nologin ${USERNAME} && \
+RUN adduser -D -s /usr/sbin/nologin ${USERNAME} && \
     chown -R ${USERNAME} /home/${USERNAME}
 
 # switch user
