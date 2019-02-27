@@ -45,13 +45,6 @@ sudo usermod -aG docker $USER
 # clear last search lighlight
 # :noh
 
-# install pycharm
-PYCHARM=pycharm-community-2017.3.1
-wget https://download.jetbrains.com/python/${PYCHARM}.tar.gz
-tar xvf ${PYCHARM}.tar.gz
-mv ${PYCHARM} pycharm
-bash -e pycharm/bin/pycharm.sh # open IDE
-
 # acestream
 echo 'deb http://repo.acestream.org/ubuntu/ trusty main' | sudo tee /etc/apt/sources.list.d/acestream.list
 sudo wget -O - http://repo.acestream.org/keys/acestream.public.key | sudo apt-key add -
