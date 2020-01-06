@@ -7,24 +7,78 @@ SED_APT_OLD="http://[A-Za-z.]*.ubuntu.com/ubuntu/\?"
 SED_APT_NEW="mirror://mirrors.ubuntu.com/mirrors.txt"
 sudo sed -i "s|${SED_APT_OLD}|${SED_APT_NEW}|g" /etc/apt/sources.list
 
-# install package
-sudo apt-get update && \
-    apt-get install -qq --no-install-recommends \
-    vim                                              \
-    sshd                          `#ssh service`     \
-    gcc g++                       `# c/c++ compiler` \
-    python-pip python-dev python-setuptools `# python tool`
-
 # clear cache (optional)
 # rm -rf /var/lib/apt/lists/*
 
+# update repos
+apt update
+
+# install ensessntail tools
+apt install -y --no-install-recommends gnupg2 ca-certificates curl wget
+
+# install Makefile
+apt install -y make
+
+# install editor
+apt install -y vim
+
+# install tmux
+apt install -y tmux
+
+# install sshd
+apt install -y openssh-server
+
+# install nvidia's ppa
+curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub | apt-key add - && \
+    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/cuda.list && \
+    echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
+
+# install GPU driver
+apt update && \
+apt install -y nvidia-driver-440
+
 # install docker
-cd /tmp
-git clone https://github.com/rancher/install-docker
-cd install-docker/
-sudo bash -e 17.10.sh
-sudo groupadd docker
+apt install -y \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg-agent \
+    software-properties-common && \
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
+apt-key fingerprint 0EBFCD88 && \
+add-apt-repository \
+   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
+   $(lsb_release -cs) \
+   stable" && \
+apt update && \
+apt install -y docker-ce docker-ce-cli containerd.io
+
+# install nvidia-docker
+curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | \
+  apt-key add -
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
+curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
+  tee /etc/apt/sources.list.d/nvidia-docker.list
+apt-get update && \
+apt install -y nvidia-docker2 && \
+pkill -SIGHUP dockerd
+
+# set docker's permission
+sudo groupadd docker && \
 sudo usermod -aG docker $USER
+
+# install vscode
+sudo apt update && \
+    sudo apt install -y software-properties-common apt-transport-https wget && \
+    wget -q https://packages.microsoft.com/keys/microsoft.asc -O- | sudo apt-key add - && \
+    sudo add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" && \
+    sudo apt install -y code
+
+# fix network prority
+sudo nmcli connection modify public_ip ipv4.route-metric 90
+nmcli connection up public_ip 
+
+# install docker
 ## useful command
 #docker rm $(docker ps -f="status=exited" -q) # remove all exited docker containers
 #docker rmi $(docker images -f "dangling=true" -q) # remove all <none> images
