@@ -1,71 +1,92 @@
 #!/bin/bash
+
 # Download image
-#https://help.ubuntu.com/community/Installation/MinimalCD
+# lnk: https://ubuntu.com/download
+
 
 # set the fastest mirror server
 SED_APT_OLD="http://[A-Za-z.]*.ubuntu.com/ubuntu/\?"
 SED_APT_NEW="mirror://mirrors.ubuntu.com/mirrors.txt"
 sudo sed -i "s|${SED_APT_OLD}|${SED_APT_NEW}|g" /etc/apt/sources.list
 
+
+# install essential tools
+sudo apt update && \
+sudo apt install gnupg2 ca-certificates curl wget \
+                 build-essential rsync make git \
+                 vim \
+                 tmux \
+                 openssh-server
+
+
 # clear cache (optional)
 # rm -rf /var/lib/apt/lists/*
 
-# update repos
-apt update
 
-# install ensessntail tools
-apt install -y --no-install-recommends gnupg2 ca-certificates curl wget
+# setup network
+sudo vim /etc/netplan/01-network-manager-all.yaml
+```yaml
+network:
+  version: 2
+  renderer: networkd
+  ethernets:
+    ${INTERFACE}:
+      addresses: [AAA.BBB.CCC.DDD/24]
+      gateway4: AAA.BBB.CCC.DDD
+      nameservers:
+        addresses: [8.8.8.8]
+```
+sudo netplan try
 
-# install Makefile
-apt install -y make
 
-# install editor
-apt install -y vim
-
-# install tmux
-apt install -y tmux
-
-# install sshd
-apt install -y openssh-server
-
-# install nvidia's ppa
-curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64/7fa2af80.pub | apt-key add - && \
-    echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/cuda.list && \
-    echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu1804/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list
-
-# install GPU driver
+# install nvidia-driver
+# ref: https://gitlab.com/nvidia/container-images/cuda/-/blob/master/dist/11.3.0/ubuntu20.04/base/Dockerfile
+sudo -i
+curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub | apt-key add - && \
+echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/cuda.list && \
+echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list && \
 apt update && \
-apt install -y nvidia-driver-440
+apt install nvidia-driver-470 && \
+reboot
+
 
 # install docker
-apt install -y \
-    apt-transport-https \
-    ca-certificates \
-    curl \
-    gnupg-agent \
-    software-properties-common && \
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | apt-key add - && \
-apt-key fingerprint 0EBFCD88 && \
-add-apt-repository \
-   "deb [arch=amd64] https://download.docker.com/linux/ubuntu \
-   $(lsb_release -cs) \
-   stable" && \
-apt update && \
-apt install -y docker-ce docker-ce-cli containerd.io
+sudo apt update
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io
+sudo groupadd docker
+sudo usermod -aG docker $USER
+
+
+# install docker
+sudo apt update
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
+sudo apt update
+sudo apt install docker-ce docker-ce-cli containerd.io
+sudo groupadd docker
+sudo usermod -aG docker $USER
+
 
 # install nvidia-docker
-curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | \
-  apt-key add -
-distribution=$(. /etc/os-release;echo $ID$VERSION_ID)
-curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | \
-  tee /etc/apt/sources.list.d/nvidia-docker.list
-apt-get update && \
-apt install -y nvidia-docker2 && \
-pkill -SIGHUP dockerd
+distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - \
+   && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
+sudo apt update
+sudo apt install -y nvidia-docker2
+sudo systemctl restart docker
+
 
 # set docker's permission
 sudo groupadd docker && \
 sudo usermod -aG docker $USER
+
 
 # install vscode
 sudo apt update && \
@@ -74,6 +95,13 @@ sudo apt update && \
     sudo add-apt-repository "deb [arch=amd64] https://packages.microsoft.com/repos/vscode stable main" && \
     sudo apt install -y code
 
+
+# install conda
+wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
+    bash /tmp//miniconda.sh -f -b -p ${HOME}/opt/miniconda && \
+    rm /tmp/miniconda.sh
+
+#######################################################################################
 # fix network prority
 sudo nmcli connection modify public_ip ipv4.route-metric 90
 nmcli connection up public_ip 
