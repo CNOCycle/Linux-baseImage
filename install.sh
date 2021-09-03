@@ -12,7 +12,7 @@ sudo sed -i "s|${SED_APT_OLD}|${SED_APT_NEW}|g" /etc/apt/sources.list
 
 # install essential tools
 sudo apt update && \
-sudo apt install gnupg2 ca-certificates curl wget \
+sudo apt install -y gnupg2 ca-certificates curl wget \
                  build-essential rsync make git \
                  vim \
                  tmux \
@@ -41,51 +41,33 @@ sudo netplan try
 
 # install nvidia-driver
 # ref: https://gitlab.com/nvidia/container-images/cuda/-/blob/master/dist/11.3.0/ubuntu20.04/base/Dockerfile
-sudo -i
-curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub | apt-key add - && \
-echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/cuda.list && \
-echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64 /" > /etc/apt/sources.list.d/nvidia-ml.list && \
-apt update && \
-apt install nvidia-driver-470 && \
-reboot
+curl -fsSL https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64/7fa2af80.pub | sudo apt-key add - && \
+echo "deb https://developer.download.nvidia.com/compute/cuda/repos/ubuntu2004/x86_64 /" | sudo tee /etc/apt/sources.list.d/cuda.list && \
+echo "deb https://developer.download.nvidia.com/compute/machine-learning/repos/ubuntu2004/x86_64 /" | sudo tee /etc/apt/sources.list.d/nvidia-ml.list && \
+sudo apt update && \
+apt install -y nvidia-driver-470 && \
+sudo reboot
 
 
 # install docker
-sudo apt update
-sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+sudo apt update && \
+sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release && \
+curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg && \
 echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-sudo apt install docker-ce docker-ce-cli containerd.io
-sudo groupadd docker
-sudo usermod -aG docker $USER
-
-
-# install docker
-sudo apt update
-sudo apt install -y apt-transport-https ca-certificates curl gnupg lsb-release
-curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
-echo "deb [arch=amd64 signed-by=/usr/share/keyrings/docker-archive-keyring.gpg] https://download.docker.com/linux/ubuntu \
-  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null
-sudo apt update
-sudo apt install docker-ce docker-ce-cli containerd.io
-sudo groupadd docker
-sudo usermod -aG docker $USER
+  $(lsb_release -cs) stable" | sudo tee /etc/apt/sources.list.d/docker.list > /dev/null && \
+sudo apt update && \
+sudo apt install -y docker-ce docker-ce-cli containerd.io && \
+sudo groupadd docker && \
+sudo usermod -aG docker ${USER}
 
 
 # install nvidia-docker
 distribution=$(. /etc/os-release;echo $ID$VERSION_ID) \
    && curl -s -L https://nvidia.github.io/nvidia-docker/gpgkey | sudo apt-key add - \
-   && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list
-sudo apt update
-sudo apt install -y nvidia-docker2
+   && curl -s -L https://nvidia.github.io/nvidia-docker/$distribution/nvidia-docker.list | sudo tee /etc/apt/sources.list.d/nvidia-docker.list && \
+sudo apt update && \
+sudo apt install -y nvidia-docker2 && \
 sudo systemctl restart docker
-
-
-# set docker's permission
-sudo groupadd docker && \
-sudo usermod -aG docker $USER
 
 
 # install vscode
@@ -100,6 +82,11 @@ sudo apt update && \
 wget https://repo.continuum.io/miniconda/Miniconda3-latest-Linux-x86_64.sh -O /tmp/miniconda.sh && \
     bash /tmp//miniconda.sh -f -b -p ${HOME}/opt/miniconda && \
     rm /tmp/miniconda.sh
+
+# set git configuration
+git config --global core.editor vim && \
+git config --global user.name ${USER} && \
+git config --global user.email ${USER}@github.com
 
 #######################################################################################
 # fix network prority
