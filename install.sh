@@ -13,7 +13,7 @@ sudo sed -i "s|${SED_APT_OLD}|${SED_APT_NEW}|g" /etc/apt/sources.list
 # install essential tools
 sudo apt update && \
 sudo apt install -y gnupg2 ca-certificates curl wget \
-                 build-essential rsync make git \
+                 bash-completion build-essential make rsync git \
                  vim \
                  tmux \
                  openssh-server
